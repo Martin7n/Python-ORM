@@ -72,29 +72,57 @@ def get_top_products():
 
 # print(get_top_products())
 
-def apply_discounts():
-    more_than_two_products_ordered_object = Order.objects.annotate(count_prod=Count("products")).filter(count_prod__gt=2, is_completed=False)
-    if not more_than_two_products_ordered_object:
-        return ""
-    discounted = more_than_two_products_ordered_object.update(total_price = F('total_price')*0.9)
-    return f"Discount applied to {more_than_two_products_ordered_object.count()} orders."
+# errors 
+# def apply_discounts():
+#     more_than_two_products_ordered_object = Order.objects.annotate(count_prod=Count("products")).filter(count_prod__gt=2, is_completed=False)
+#     if not more_than_two_products_ordered_object:
+#         return ""
+#     discounted = more_than_two_products_ordered_object.update(total_price = F('total_price')*0.9)
+#     return f"Discount applied to {more_than_two_products_ordered_object.count()} orders."
+
+def apply_discounts() -> str:
+    updated_orders_count = Order.objects.annotate(
+        products_count=Count('products')
+    ).filter(
+        products_count__gt=2,
+        is_completed=False
+    ).update(
+        total_price=F('total_price') * 0.90
+    )
+
+    return f"Discount applied to {updated_orders_count} orders."
 
 # print(apply_discounts())
 
+# def complete_order():
+
+
+#     order = Order.objects.filter(is_completed=False).first()
+#     if not order or not Order.objects.all():
+#         return ""
+
+
+#     for product in order.products.all():
+#         if product.is_available:
+#             product.in_stock -= 1
+#             if product.in_stock ==0:
+#                 product.is_available = False
+#             product.save()
+#     order.is_completed = True
+#     order.save()
+#     return "Order has been completed!"
+
+
+'''better one'''
 def complete_order():
-
-
     order = Order.objects.filter(is_completed=False).first()
-    if not order or not Order.objects.all():
+    if not order:
         return ""
 
+    order.products.update(in_stock=F('in_stock') - 1, is_available=Case(
+            When(in_stock=1, then=Value(False)),
+            default=F('is_available')))
 
-    for product in order.products.all():
-        if product.is_available:
-            product.in_stock -= 1
-            if product.in_stock ==0:
-                product.is_available = False
-            product.save()
     order.is_completed = True
     order.save()
     return "Order has been completed!"
