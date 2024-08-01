@@ -25,12 +25,12 @@ from django.db.models import Count, Q, F
 def get_profiles(search_string=None):
     if search_string is None:
         return ""
-    query = (Q(full_name__icontains=search_string) | Q(email__icontains=search_string) | Q(phone_number__icontains=search_string))
-    result = Profile.objects.filter(query).annotate(count_profiles=Count('orders_profile')).order_by('full_name')
-    if not result:
-        return ''
-    return "\n".join(f'Profile: {user.full_name}, email: {user.email}, phone number: {user.phone_number}, orders: {user.count_profiles}' for user in result)
-    # return "\n".join(f'Profile: {user.full_name}, email: {user.email}, phone number: {user.phone_number}, orders: ' for user in result)
+    query = Q(full_name__icontains=search_string) | Q(email__icontains=search_string) | Q(phone_number__icontains=search_string)
+    profiles = Profile.objects.filter(query).annotate(num_ord=Count("orders_profile")).order_by('full_name')
+
+    if not profiles.exists():
+        return ""
+    return '\n'.join(f"Profile: {p.full_name}, email: {p.email}, phone number: {p.phone_number}, orders: {p.num_ord}" for p in profiles)
 
 
 # print(get_profiles(None))
